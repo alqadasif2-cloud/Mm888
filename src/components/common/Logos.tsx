@@ -52,5 +52,18 @@ export const MetaQuotesLogo: React.FC<{ className?: string }> = ({ className = '
 };
 
 export const MT5AppLogo: React.FC<{ className?: string }> = ({ className = 'w-7 h-7' }) => {
-  return <MetaQuotesLogo className={className} />;
+  return (
+    <div
+      className={`${className} shrink-0 select-none relative flex items-center justify-center rounded-full overflow-hidden`}
+      style={{ aspectRatio: '1 / 1' }}
+      title="MetaTrader 5"
+    >
+      <img
+        src="/icon.png"
+        alt="MetaTrader 5"
+        referrerPolicy="no-referrer"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  );
 };
