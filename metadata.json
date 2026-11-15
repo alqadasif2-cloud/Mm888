@@ -1,0 +1,6 @@
+{
+  "name": "MetaTrader 5 (MT5)",
+  "description": "منصة تداول MetaTrader 5 بواجهة عربية متكاملة، رسم بياني تفاعلي بالتقريب والتبعيد وتوسيع المحور السعري، إدارة الصفقات والأوامر وتعديلها، وسجل تاريخي شامل.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
