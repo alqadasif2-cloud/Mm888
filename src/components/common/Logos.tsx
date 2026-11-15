@@ -32,13 +32,13 @@ export const MetaQuotesLogo: React.FC<{ className?: string }> = ({ className = '
 
   return (
     <div
-      className={`${className} shrink-0 select-none relative flex items-center justify-center rounded-[10px] overflow-hidden bg-[#141923]`}
+      className={`${className} shrink-0 select-none relative flex items-center justify-center rounded-full overflow-hidden bg-transparent`}
       style={{ aspectRatio: '1 / 1' }}
       title="MetaQuotes MT5"
     >
       {!imgError ? (
         <img
-          src={METAQUOTES_LOGO_URL}
+          src="/icon.png"
           alt="MetaQuotes MT5"
           referrerPolicy="no-referrer"
           className="w-full h-full object-contain"

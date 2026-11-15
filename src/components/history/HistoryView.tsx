@@ -5,25 +5,43 @@ import { Deal } from '../../types/mt5';
 export const HistoryView: React.FC = () => {
   const { historyDeals, activeAccount, quotes, setIsDrawerOpen } = useTrading();
 
-  const [activeSubTab, setActiveSubTab] = useState<'positions' | 'orders' | 'deals'>('positions');
+  // Default to 'positions' (المراكز - on the left tab, matching Screenshot_20261115134235_5c7961b3.jpg)
+  const [activeSubTab, setActiveSubTab] = useState<'deals' | 'orders' | 'positions'>('positions');
   const [calendarDropdownOpen, setCalendarDropdownOpen] = useState<boolean>(false);
   const [customCalendarOpen, setCustomCalendarOpen] = useState<boolean>(false);
-  const [filterPeriod, setFilterPeriod] = useState<'today' | 'week' | 'month' | '3months' | 'custom' | 'all'>('3months');
-  const [customStartDate, setCustomStartDate] = useState<string>(() => {
-    const d = new Date(Date.now() - 30 * 86400000);
-    return d.toISOString().slice(0, 10);
-  });
-  const [customEndDate, setCustomEndDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [filterPeriod, setFilterPeriod] = useState<'today' | 'week' | 'month' | '3months' | 'custom' | 'all'>('all');
+
+  // Single-day custom calendar selection (YYYY.MM.DD)
+  const [customSelectedDate, setCustomSelectedDate] = useState<string>('2026.11.10');
+  const [calendarYear, setCalendarYear] = useState<number>(2026);
+  const [calendarMonth, setCalendarMonth] = useState<number>(10); // 0-indexed: 10 = November
 
   const [symbolFilterOpen, setSymbolFilterOpen] = useState<boolean>(false);
   const [selectedSymbolFilter, setSelectedSymbolFilter] = useState<string>('all');
   const [sortAsc, setSortAsc] = useState<boolean>(false);
   const [expandedDealId, setExpandedDealId] = useState<string | null>(null);
 
+  const arabicMonthNames = [
+    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+  ];
+  const arabicWeekDays = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+
   const accountDeals = useMemo(
     () => historyDeals.filter((d) => d.accountId === activeAccount.id),
     [historyDeals, activeAccount.id]
   );
+
+  // Set of dates (YYYY.MM.DD) that have recorded trades or deposits in the active account
+  const dealDatesSet = useMemo(() => {
+    const set = new Set<string>();
+    accountDeals.forEach((d) => {
+      if (d.closeTime) {
+        set.add(d.closeTime.split(' ')[0]);
+      }
+    });
+    return set;
+  }, [accountDeals]);
 
   const uniqueSymbols = useMemo(() => {
     const set = new Set<string>();
@@ -33,7 +51,6 @@ export const HistoryView: React.FC = () => {
     return Array.from(set);
   }, [accountDeals]);
 
-  // Date helper strings for the Calendar Dropdown subtitles (matching PDF Page 1 bottom-left)
   const dateRanges = useMemo(() => {
     const now = new Date();
     const fmt = (d: Date) =>
@@ -47,9 +64,9 @@ export const HistoryView: React.FC = () => {
       week: `${todayStr} - ${weekAgo}`,
       month: `${todayStr} - ${monthAgo}`,
       threeMonths: `${todayStr} - ${threeMonthsAgo}`,
-      custom: `${customStartDate.replace(/-/g, '/')} - ${customEndDate.replace(/-/g, '/')}`
+      custom: customSelectedDate.replace(/\./g, '/')
     };
-  }, [customStartDate, customEndDate]);
+  }, [customSelectedDate]);
 
   const parseDealDate = (str: string): Date => {
     const [datePart] = (str || '').split(' ');
@@ -57,6 +74,7 @@ export const HistoryView: React.FC = () => {
     return new Date(y || 2026, (m || 1) - 1, d || 1);
   };
 
+  // Strict filtering: each day shows ONLY its own deals when selected
   const filteredDeals = useMemo(() => {
     let list = accountDeals;
     if (selectedSymbolFilter !== 'all') {
@@ -64,10 +82,12 @@ export const HistoryView: React.FC = () => {
     }
 
     const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayKey = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
 
-    if (filterPeriod === 'today') {
-      list = list.filter((d) => parseDealDate(d.closeTime) >= startOfToday);
+    if (filterPeriod === 'custom' && customSelectedDate) {
+      list = list.filter((d) => d.closeTime && d.closeTime.split(' ')[0] === customSelectedDate);
+    } else if (filterPeriod === 'today') {
+      list = list.filter((d) => d.closeTime && d.closeTime.split(' ')[0] === todayKey);
     } else if (filterPeriod === 'week') {
       const minDate = new Date(now.getTime() - 7 * 86400000);
       list = list.filter((d) => parseDealDate(d.closeTime) >= minDate);
@@ -77,20 +97,12 @@ export const HistoryView: React.FC = () => {
     } else if (filterPeriod === '3months') {
       const minDate = new Date(now.getTime() - 90 * 86400000);
       list = list.filter((d) => parseDealDate(d.closeTime) >= minDate);
-    } else if (filterPeriod === 'custom') {
-      const s = new Date(customStartDate);
-      const e = new Date(customEndDate);
-      e.setHours(23, 59, 59, 999);
-      list = list.filter((d) => {
-        const dt = parseDealDate(d.closeTime);
-        return dt >= s && dt <= e;
-      });
     }
 
     return [...list].sort((a, b) =>
       sortAsc ? a.closeTime.localeCompare(b.closeTime) : b.closeTime.localeCompare(a.closeTime)
     );
-  }, [accountDeals, selectedSymbolFilter, filterPeriod, customStartDate, customEndDate, sortAsc]);
+  }, [accountDeals, selectedSymbolFilter, filterPeriod, customSelectedDate, sortAsc]);
 
   const tradingDeals = useMemo(
     () => filteredDeals.filter((d) => d.type !== 'deposit'),
@@ -124,11 +136,42 @@ export const HistoryView: React.FC = () => {
 
   const getDigits = (symbol: string) => quotes.find((q) => q.symbol === symbol)?.digits ?? 3;
 
+  // Calendar Math
+  const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
+
+  const handlePrevMonth = () => {
+    if (calendarMonth === 0) {
+      setCalendarMonth(11);
+      setCalendarYear((y) => y - 1);
+    } else {
+      setCalendarMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (calendarMonth === 11) {
+      setCalendarMonth(0);
+      setCalendarYear((y) => y + 1);
+    } else {
+      setCalendarMonth((m) => m + 1);
+    }
+  };
+
+  const handlePickDay = (day: number) => {
+    const mStr = String(calendarMonth + 1).padStart(2, '0');
+    const dStr = String(day).padStart(2, '0');
+    const key = `${calendarYear}.${mStr}.${dStr}`;
+    setCustomSelectedDate(key);
+    setFilterPeriod('custom');
+    setCustomCalendarOpen(false);
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-[#000000] text-white overflow-hidden select-none relative">
-      {/* 1. Header (Matching PDF Page 1 bottom & Page 2 top) */}
+      {/* 1. Header (Exact match to Screenshot_20261115134235_5c7961b3.jpg) */}
       <header className="h-14 px-3 flex items-center justify-between bg-[#000000] shrink-0 z-30">
-        {/* Right side: Hamburger + "السجل" + Symbol Subtitle */}
+        {/* Right side: Hamburger + "السجل" + Subtitle */}
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsDrawerOpen(true)}
@@ -144,33 +187,41 @@ export const HistoryView: React.FC = () => {
           <div>
             <h1 className="text-[17px] font-bold leading-tight text-white">السجل</h1>
             <span className="text-[12px] text-[#8e9aa8] block leading-tight">
-              {selectedSymbolFilter === 'all' ? 'كل الرموز' : selectedSymbolFilter}
+              {filterPeriod === 'custom'
+                ? customSelectedDate
+                : selectedSymbolFilter === 'all'
+                ? 'كل الرموز'
+                : selectedSymbolFilter}
             </span>
           </div>
         </div>
 
-        {/* Left side icons: $ Symbol Filter, ⇅ Sort, 📅 Calendar */}
+        {/* Left side (in RTL): Circular-Arrows Dollar ($), Sort (⇅), Calendar (📅) */}
         <div className="flex items-center gap-0.5 relative">
-          {/* Symbol Filter ($) */}
+          {/* Dollar with circular arrows */}
           <button
             onClick={() => {
               setSymbolFilterOpen((v) => !v);
               setCalendarDropdownOpen(false);
             }}
-            aria-label="تصفية حسب الرمز"
-            title="تصفية الرمز"
-            className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 font-num font-bold text-lg cursor-pointer ${
+            aria-label="تصفية الرمز"
+            className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 cursor-pointer ${
               selectedSymbolFilter !== 'all' ? 'text-[#2196f3]' : 'text-white'
             }`}
           >
-            $
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
+              <path d="M21 12a9 9 0 0 0-15.5-6.3L3 8" strokeLinecap="round" />
+              <polyline points="3 4 3 8 7 8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 12a9 9 0 0 0 15.5 6.3L21 16" strokeLinecap="round" />
+              <polyline points="21 20 21 16 17 16" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 7.5v9M14.2 9.5c0-1-1-1.6-2.2-1.6s-2.2.6-2.2 1.6 1 1.5 2.2 1.8 2.2.8 2.2 1.8-1 1.7-2.2 1.7-2.2-.7-2.2-1.7" strokeLinecap="round" />
+            </svg>
           </button>
 
           {/* Sort Arrows */}
           <button
             onClick={() => setSortAsc((v) => !v)}
-            aria-label="فرز السجل"
-            title="عكس الترتيب"
+            aria-label="ترتيب السجل"
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 text-white cursor-pointer"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" className="w-5 h-5">
@@ -179,57 +230,65 @@ export const HistoryView: React.FC = () => {
             </svg>
           </button>
 
-          {/* Calendar Period Icon */}
+          {/* Calendar Icon */}
           <button
             onClick={() => {
               setCalendarDropdownOpen((v) => !v);
               setSymbolFilterOpen(false);
             }}
             aria-label="تحديد الفترة الزمنية"
-            title="تحديد الفترة الزمنية"
             className={`w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/10 cursor-pointer ${
-              calendarDropdownOpen ? 'text-[#2196f3]' : 'text-white'
+              filterPeriod === 'custom' || calendarDropdownOpen ? 'text-[#2196f3]' : 'text-white'
             }`}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="w-5 h-5">
               <rect x="3" y="4" width="18" height="17" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
+              <line x1="3" y1="9.5" x2="21" y2="9.5" />
+              <line x1="16" y1="2.5" x2="16" y2="6" />
+              <line x1="8" y1="2.5" x2="8" y2="6" />
+              <circle cx="8" cy="14" r="1" fill="currentColor" />
+              <circle cx="12" cy="14" r="1" fill="currentColor" />
+              <circle cx="16" cy="14" r="1" fill="currentColor" />
             </svg>
           </button>
 
           {/* Symbol Dropdown */}
           {symbolFilterOpen && (
-            <div
-              className="absolute left-16 top-12 w-44 bg-[#181b22] border border-[#2a2f3a] rounded-xl shadow-2xl py-1.5 z-50 text-xs"
-              onClick={() => setSymbolFilterOpen(false)}
-            >
-              <button
-                onClick={() => setSelectedSymbolFilter('all')}
-                className={`w-full px-3.5 py-2 text-right flex items-center justify-between hover:bg-white/5 cursor-pointer ${
-                  selectedSymbolFilter === 'all' ? 'text-[#2196f3] font-bold' : 'text-white'
-                }`}
-              >
-                <span>كل الرموز</span>
-                {selectedSymbolFilter === 'all' && <span>✓</span>}
-              </button>
-              {uniqueSymbols.map((sym) => (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setSymbolFilterOpen(false)} />
+              <div className="absolute left-16 top-12 w-44 bg-[#181b22] border border-[#2a2f3a] rounded-xl shadow-2xl py-1.5 z-50 text-xs">
                 <button
-                  key={sym}
-                  onClick={() => setSelectedSymbolFilter(sym)}
-                  className={`w-full px-3.5 py-2 text-right flex items-center justify-between hover:bg-white/5 font-num cursor-pointer ${
-                    selectedSymbolFilter === sym ? 'text-[#2196f3] font-bold' : 'text-[#cfd8dc]'
+                  onClick={() => {
+                    setSelectedSymbolFilter('all');
+                    setSymbolFilterOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-2 text-right flex items-center justify-between hover:bg-white/5 cursor-pointer ${
+                    selectedSymbolFilter === 'all' ? 'text-[#2196f3] font-bold' : 'text-white'
                   }`}
                 >
-                  <span>{sym}</span>
-                  {selectedSymbolFilter === sym && <span>✓</span>}
+                  <span>كل الرموز</span>
+                  {selectedSymbolFilter === 'all' && <span>✓</span>}
                 </button>
-              ))}
-            </div>
+                {uniqueSymbols.map((sym) => (
+                  <button
+                    key={sym}
+                    onClick={() => {
+                      setSelectedSymbolFilter(sym);
+                      setSymbolFilterOpen(false);
+                    }}
+                    className={`w-full px-3.5 py-2 text-right flex items-center justify-between hover:bg-white/5 font-num cursor-pointer ${
+                      selectedSymbolFilter === sym ? 'text-[#2196f3] font-bold' : 'text-[#cfd8dc]'
+                    }`}
+                  >
+                    <span>{sym}</span>
+                    {selectedSymbolFilter === sym && <span>✓</span>}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
 
-          {/* Calendar Period Dropdown Menu (Exact match to PDF Page 1 bottom-left) */}
+          {/* Calendar Period Dropdown Menu */}
           {calendarDropdownOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setCalendarDropdownOpen(false)} />
@@ -239,7 +298,8 @@ export const HistoryView: React.FC = () => {
                   { id: 'week', label: 'الأسبوع السابق', sub: dateRanges.week },
                   { id: 'month', label: 'الشهر السابق', sub: dateRanges.month },
                   { id: '3months', label: 'الثلاثة أشهر السابقة', sub: dateRanges.threeMonths },
-                  { id: 'custom', label: 'فترة مخصصة', sub: dateRanges.custom }
+                  { id: 'custom', label: 'فترة مخصصة', sub: dateRanges.custom },
+                  { id: 'all', label: 'كل السجل', sub: 'عرض جميع الأيام' }
                 ].map((item) => {
                   const active = filterPeriod === item.id;
                   return (
@@ -275,12 +335,13 @@ export const HistoryView: React.FC = () => {
         </div>
       </header>
 
-      {/* 2. Three MT5 Sub-Tabs: الصفقات | الطلبات | المراكز */}
-      <div className="grid grid-cols-3 border-b border-[#181b21] bg-[#000000] shrink-0 text-[13px] font-bold">
+      {/* 2. Sub-Tabs in Exact Order of Screenshot_20261115134235_5c7961b3.jpg:
+             Right: الصفقات | Center: الطلبات | Left: المراكز */}
+      <div dir="rtl" className="grid grid-cols-3 border-b border-[#181b21] bg-[#000000] shrink-0 text-[13.5px] font-medium">
         {[
-          { id: 'positions', label: 'المراكز' },
+          { id: 'deals', label: 'الصفقات' },
           { id: 'orders', label: 'الطلبات' },
-          { id: 'deals', label: 'الصفقات' }
+          { id: 'positions', label: 'المراكز' }
         ].map((tab) => {
           const isActive = activeSubTab === tab.id;
           return (
@@ -288,7 +349,7 @@ export const HistoryView: React.FC = () => {
               key={tab.id}
               onClick={() => setActiveSubTab(tab.id as typeof activeSubTab)}
               className={`py-2.5 text-center relative cursor-pointer transition-colors ${
-                isActive ? 'text-white' : 'text-[#8e9aa8] hover:text-[#cfd8dc]'
+                isActive ? 'text-white font-bold' : 'text-[#8e9aa8] hover:text-[#cfd8dc]'
               }`}
             >
               {tab.label}
@@ -300,33 +361,34 @@ export const HistoryView: React.FC = () => {
         })}
       </div>
 
-      {/* 3. Summary Block (Matches PDF Page 1 & Page 2) */}
+      {/* 3. Summary Block (Exact RTL orientation matching Screenshot_20261115134235_5c7961b3.jpg:
+             Label on RIGHT, dotted leader in CENTER, Value on LEFT) */}
       {activeSubTab === 'orders' ? (
-        <div className="px-4 py-2.5 bg-[#000000] border-b border-[#181b21] space-y-1.5 shrink-0 text-[13px]">
+        <div dir="rtl" className="px-4 py-2.5 bg-[#000000] border-b border-[#181b21] space-y-1.5 shrink-0 text-[13.5px]">
           <div className="flex items-baseline justify-between">
-            <span className="text-white">المنفذ:</span>
-            <div className="flex-1 mx-2 border-b border-dotted border-[#363c48] self-center" />
-            <span className="font-num font-bold text-white">{filledOrdersCount}</span>
+            <span className="text-white shrink-0">المنفذ:</span>
+            <div className="flex-1 mx-2.5 border-b border-dotted border-[#464c58] self-center" />
+            <span className="font-num font-bold text-white shrink-0">{filledOrdersCount}</span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-white">الملغي:</span>
-            <div className="flex-1 mx-2 border-b border-dotted border-[#363c48] self-center" />
-            <span className="font-num font-bold text-white">{canceledOrdersCount}</span>
+            <span className="text-white shrink-0">الملغي:</span>
+            <div className="flex-1 mx-2.5 border-b border-dotted border-[#464c58] self-center" />
+            <span className="font-num font-bold text-white shrink-0">{canceledOrdersCount}</span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-white">الإجمالي:</span>
-            <div className="flex-1 mx-2 border-b border-dotted border-[#363c48] self-center" />
-            <span className="font-num font-bold text-white">{tradingDeals.length}</span>
+            <span className="text-white shrink-0">الإجمالي:</span>
+            <div className="flex-1 mx-2.5 border-b border-dotted border-[#464c58] self-center" />
+            <span className="font-num font-bold text-white shrink-0">{tradingDeals.length}</span>
           </div>
         </div>
       ) : (
-        <div className="px-4 py-2.5 bg-[#000000] border-b border-[#181b21] space-y-1.5 shrink-0 text-[13px]">
+        <div dir="rtl" className="px-4 py-2.5 bg-[#000000] border-b border-[#181b21] space-y-1.5 shrink-0 text-[13.5px]">
           <div className="flex items-baseline justify-between">
-            <span className="text-white">الربح:</span>
-            <div className="flex-1 mx-2 border-b border-dotted border-[#363c48] self-center" />
+            <span className="text-white shrink-0">الربح:</span>
+            <div className="flex-1 mx-2.5 border-b border-dotted border-[#464c58] self-center" />
             <span
               dir="ltr"
-              className={`font-num font-bold ${
+              className={`font-num font-bold shrink-0 ${
                 totalProfit >= 0 ? 'text-[#2196f3]' : 'text-[#ef5350]'
               }`}
             >
@@ -334,56 +396,71 @@ export const HistoryView: React.FC = () => {
             </span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-white">الإيداع:</span>
-            <div className="flex-1 mx-2 border-b border-dotted border-[#363c48] self-center" />
-            <span className="font-num font-bold text-white">{totalDeposit.toFixed(2)}</span>
+            <span className="text-white shrink-0">الايداع:</span>
+            <div className="flex-1 mx-2.5 border-b border-dotted border-[#464c58] self-center" />
+            <span dir="ltr" className="font-num font-bold text-white shrink-0">
+              {totalDeposit.toFixed(2)}
+            </span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-white">الفائدة:</span>
-            <div className="flex-1 mx-2 border-b border-dotted border-[#363c48] self-center" />
-            <span className="font-num font-bold text-white">{totalSwap.toFixed(2)}</span>
+            <span className="text-white shrink-0">الفائدة:</span>
+            <div className="flex-1 mx-2.5 border-b border-dotted border-[#464c58] self-center" />
+            <span dir="ltr" className="font-num font-bold text-white shrink-0">
+              {totalSwap.toFixed(2)}
+            </span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-white">العمولة:</span>
-            <div className="flex-1 mx-2 border-b border-dotted border-[#363c48] self-center" />
-            <span className="font-num font-bold text-white">{totalCommission.toFixed(2)}</span>
+            <span className="text-white shrink-0">العمولة:</span>
+            <div className="flex-1 mx-2.5 border-b border-dotted border-[#464c58] self-center" />
+            <span dir="ltr" className="font-num font-bold text-white shrink-0">
+              {totalCommission.toFixed(2)}
+            </span>
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-white">رصيد الحساب:</span>
-            <div className="flex-1 mx-2 border-b border-dotted border-[#363c48] self-center" />
-            <span dir="ltr" className="font-num font-bold text-white">
+            <span className="text-white shrink-0">رصيد الحساب:</span>
+            <div className="flex-1 mx-2.5 border-b border-dotted border-[#464c58] self-center" />
+            <span dir="ltr" className="font-num font-bold text-white shrink-0">
               {netBalance.toFixed(2)}
             </span>
           </div>
         </div>
       )}
 
-      {/* 4. History Rows List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-[#14161b]">
+      {/* 4. History List (Exact layout of Screenshot_20261115134235_5c7961b3.jpg:
+             LEFT: Symbol, buy/sell lots & openPrice → closePrice
+             RIGHT: Timestamp & Profit) */}
+      <div className="flex-1 overflow-y-auto divide-y divide-[#181b21]">
         {tradingDeals.length === 0 ? (
-          <div className="py-16 text-center text-[#8e9aa8] text-sm">
-            لا توجد عمليات مسجلة في هذه الفترة الزمنية
+          <div className="py-16 px-4 text-center text-[#8e9aa8]">
+            <p className="text-sm font-semibold text-[#cfd8dc]">لا توجد صفقات في هذا التاريخ</p>
+            {filterPeriod === 'custom' && (
+              <button
+                onClick={() => setFilterPeriod('all')}
+                className="mt-3 px-4 py-2 bg-[#1e232d] text-[#3897f0] rounded-xl text-xs font-bold cursor-pointer"
+              >
+                عرض كل السجل
+              </button>
+            )}
           </div>
         ) : activeSubTab === 'orders' ? (
-          /* ORDERS TAB (PDF Page 2 Top-Right) */
           tradingDeals.map((deal: Deal) => {
             const isBuy = deal.type === 'buy';
             return (
               <div key={deal.id} dir="ltr" className="px-4 py-2.5 flex items-center justify-between hover:bg-[#0b0d11]">
                 <div className="text-left">
                   <div className="flex items-baseline gap-1.5 leading-tight">
-                    <span className="text-[14px] font-num font-bold text-white">{deal.symbol},</span>
-                    <span className={`text-[13px] font-num font-semibold ${isBuy ? 'text-[#2196f3]' : 'text-[#ef5350]'}`}>
+                    <span className="text-[15px] font-num font-bold text-white">{deal.symbol},</span>
+                    <span className={`text-[14px] font-num font-medium ${isBuy ? 'text-[#2196f3]' : 'text-[#ef5350]'}`}>
                       {deal.type}
                     </span>
                   </div>
-                  <div className="text-[12px] font-num text-[#8e9aa8] mt-0.5">
+                  <div className="text-[13px] font-num text-[#9ea8b3] mt-0.5">
                     {deal.lots.toFixed(2)} / {deal.lots.toFixed(2)} at market
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] font-num text-[#8e9aa8]">{deal.openTime}</div>
-                  <div className="text-[12px] font-num font-semibold text-[#cfd8dc] mt-0.5">
+                  <div className="text-[11.5px] font-num text-[#9ea8b3]">{deal.openTime}</div>
+                  <div className="text-[12.5px] font-num font-semibold text-[#cfd8dc] mt-0.5">
                     {deal.status || 'FILLED'}
                   </div>
                 </div>
@@ -391,7 +468,6 @@ export const HistoryView: React.FC = () => {
             );
           })
         ) : activeSubTab === 'deals' ? (
-          /* DEALS TAB (in / out — PDF Page 2 Top-Left) */
           tradingDeals.map((deal: Deal) => {
             const isBuy = deal.type === 'buy';
             const digits = getDigits(deal.symbol);
@@ -400,19 +476,19 @@ export const HistoryView: React.FC = () => {
               <div key={deal.id} dir="ltr" className="px-4 py-2.5 flex items-center justify-between hover:bg-[#0b0d11]">
                 <div className="text-left">
                   <div className="flex items-baseline gap-1 leading-tight">
-                    <span className="text-[14px] font-num font-bold text-white">{deal.symbol},</span>
-                    <span className={`text-[13px] font-num font-semibold ${isBuy ? 'text-[#2196f3]' : 'text-[#ef5350]'}`}>
+                    <span className="text-[15px] font-num font-bold text-white">{deal.symbol},</span>
+                    <span className={`text-[14px] font-num font-medium ${isBuy ? 'text-[#2196f3]' : 'text-[#ef5350]'}`}>
                       {deal.type}, {deal.direction || 'out'}
                     </span>
                   </div>
-                  <div className="text-[12px] font-num text-[#8e9aa8] mt-0.5">
+                  <div className="text-[13px] font-num text-[#9ea8b3] mt-0.5">
                     {deal.lots.toFixed(2)} at {execPrice.toFixed(digits)}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[11px] font-num text-[#8e9aa8]">{deal.closeTime}</div>
+                  <div className="text-[11.5px] font-num text-[#9ea8b3]">{deal.closeTime}</div>
                   <div
-                    className={`text-[14px] font-num font-bold mt-0.5 ${
+                    className={`text-[14.5px] font-num font-bold mt-0.5 ${
                       deal.profit >= 0 ? 'text-[#2196f3]' : 'text-[#ef5350]'
                     }`}
                   >
@@ -423,7 +499,6 @@ export const HistoryView: React.FC = () => {
             );
           })
         ) : (
-          /* POSITIONS TAB (PDF Page 1 Bottom) */
           tradingDeals.map((deal: Deal) => {
             const isBuy = deal.type === 'buy';
             const digits = getDigits(deal.symbol);
@@ -435,21 +510,24 @@ export const HistoryView: React.FC = () => {
                 className="px-4 py-2.5 hover:bg-[#0b0d11] cursor-pointer"
               >
                 <div dir="ltr" className="flex items-center justify-between">
+                  {/* LEFT SIDE: Symbol + buy/sell + open → close */}
                   <div className="text-left">
                     <div className="flex items-baseline gap-1.5 leading-tight">
-                      <span className="text-[14px] font-num font-bold text-white">{deal.symbol},</span>
-                      <span className={`text-[13px] font-num font-semibold ${isBuy ? 'text-[#2196f3]' : 'text-[#ef5350]'}`}>
+                      <span className="text-[15px] font-num font-bold text-white">{deal.symbol},</span>
+                      <span className={`text-[14px] font-num font-medium ${isBuy ? 'text-[#2196f3]' : 'text-[#ef5350]'}`}>
                         {deal.type} {deal.lots.toFixed(2)}
                       </span>
                     </div>
-                    <div className="text-[12px] font-num text-[#8e9aa8] mt-0.5">
+                    <div className="text-[13.5px] font-num text-[#9ea8b3] mt-0.5">
                       {deal.openPrice.toFixed(digits)} → {deal.closePrice.toFixed(digits)}
                     </div>
                   </div>
+
+                  {/* RIGHT SIDE: Timestamp + Profit */}
                   <div className="text-right">
-                    <div className="text-[11px] font-num text-[#8e9aa8]">{deal.closeTime}</div>
+                    <div className="text-[11.5px] font-num text-[#9ea8b3]">{deal.closeTime}</div>
                     <div
-                      className={`text-[14px] font-num font-bold mt-0.5 ${
+                      className={`text-[14.5px] font-num font-bold mt-0.5 ${
                         deal.profit >= 0 ? 'text-[#2196f3]' : 'text-[#ef5350]'
                       }`}
                     >
@@ -481,66 +559,105 @@ export const HistoryView: React.FC = () => {
         )}
       </div>
 
-      {/* Custom Date Range Modal */}
+      {/* 5. Monthly Calendar Modal for Single-Day Exact Filtering ("تخصيص التاريخ") */}
       {customCalendarOpen && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fadeIn"
           onClick={() => setCustomCalendarOpen(false)}
         >
           <div
-            className="bg-[#181b22] border border-[#2a2f3a] rounded-2xl w-full max-w-xs p-4 text-right shadow-2xl space-y-3"
+            className="bg-[#181b22] border border-[#2a2f3a] rounded-2xl w-full max-w-sm p-4 text-right shadow-2xl flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-2 border-b border-[#242832]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#242832]">
               <button
                 onClick={() => setCustomCalendarOpen(false)}
-                className="w-7 h-7 rounded-full bg-white/5 text-[#8e9aa8] hover:text-white cursor-pointer"
+                className="w-8 h-8 rounded-full bg-white/5 text-[#8e9aa8] hover:text-white cursor-pointer"
               >
                 ✕
               </button>
-              <h3 className="font-bold text-white text-sm">تحديد فترة مخصصة</h3>
-              <div className="w-7" />
+              <h3 className="font-bold text-white text-sm">اختر تاريخ السجل</h3>
+              <div className="w-8" />
             </div>
 
-            <div className="space-y-2.5 text-xs">
-              <div>
-                <label className="text-[#8e9aa8] block mb-1">من تاريخ:</label>
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="w-full bg-[#101217] border border-[#2a2f3a] rounded-xl px-3 py-2 text-white font-num outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-[#8e9aa8] block mb-1">إلى تاريخ:</label>
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="w-full bg-[#101217] border border-[#2a2f3a] rounded-xl px-3 py-2 text-white font-num outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-1">
+            {/* Month Navigation */}
+            <div dir="ltr" className="flex items-center justify-between py-3 px-1">
               <button
-                onClick={() => {
-                  setFilterPeriod('custom');
-                  setCustomCalendarOpen(false);
-                }}
-                className="flex-1 py-2.5 bg-[#2196f3] hover:bg-[#1976d2] text-white font-bold rounded-xl text-xs cursor-pointer"
+                onClick={handlePrevMonth}
+                className="w-8 h-8 rounded-lg bg-[#222630] hover:bg-[#2c313e] text-white font-bold cursor-pointer"
               >
-                تطبيق
+                ‹
               </button>
+              <div className="text-sm font-bold text-white">
+                {arabicMonthNames[calendarMonth]}{' '}
+                <span className="font-num text-[#2196f3]">{calendarYear}</span>
+              </div>
+              <button
+                onClick={handleNextMonth}
+                className="w-8 h-8 rounded-lg bg-[#222630] hover:bg-[#2c313e] text-white font-bold cursor-pointer"
+              >
+                ›
+              </button>
+            </div>
+
+            {/* Weekday Header */}
+            <div className="grid grid-cols-7 gap-1 text-center py-1 text-[11px] font-bold text-[#8e9aa8] border-b border-[#242832]">
+              {arabicWeekDays.map((w) => (
+                <div key={w}>{w}</div>
+              ))}
+            </div>
+
+            {/* Calendar Days Grid */}
+            <div className="grid grid-cols-7 gap-1 text-center py-2 text-xs">
+              {Array.from({ length: firstDayOfMonth(calendarYear, calendarMonth) }).map((_, i) => (
+                <div key={`empty-${i}`} className="h-9" />
+              ))}
+              {Array.from({ length: daysInMonth(calendarYear, calendarMonth) }).map((_, idx) => {
+                const day = idx + 1;
+                const key = `${calendarYear}.${String(calendarMonth + 1).padStart(2, '0')}.${String(day).padStart(2, '0')}`;
+                const isSelected = filterPeriod === 'custom' && customSelectedDate === key;
+                const hasDeals = dealDatesSet.has(key);
+
+                return (
+                  <button
+                    key={day}
+                    onClick={() => handlePickDay(day)}
+                    className={`h-9 rounded-xl flex flex-col items-center justify-center font-num font-bold transition-colors cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#2196f3] text-white'
+                        : hasDeals
+                        ? 'bg-[#1f2532] text-white border border-[#2196f3]/40 hover:bg-[#2a3242]'
+                        : 'text-[#8e9aa8] hover:bg-[#222630] hover:text-white'
+                    }`}
+                  >
+                    <span className="leading-none">{day}</span>
+                    {hasDeals && (
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full mt-0.5 ${
+                          isSelected ? 'bg-white' : 'bg-[#2196f3]'
+                        }`}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-[#242832]">
               <button
                 onClick={() => {
                   setFilterPeriod('all');
                   setCustomCalendarOpen(false);
                 }}
-                className="px-3 py-2.5 bg-[#242832] text-[#cfd8dc] font-bold rounded-xl text-xs cursor-pointer"
+                className="flex-1 py-2.5 bg-[#222630] hover:bg-[#2c313e] text-[#cfd8dc] font-bold rounded-xl text-xs cursor-pointer"
               >
-                الكل
+                كل السجل
+              </button>
+              <button
+                onClick={() => setCustomCalendarOpen(false)}
+                className="px-4 py-2.5 bg-[#222630] text-[#8e9aa8] font-bold rounded-xl text-xs cursor-pointer"
+              >
+                إغلاق
               </button>
             </div>
           </div>

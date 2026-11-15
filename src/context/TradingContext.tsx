@@ -47,19 +47,37 @@ interface TradingContextType {
   isLiveConnected: boolean;
 }
 
+// Balance calculation for "إسلام 1":
+// Initial Deposit: 127.00 (2026.11.10)
+// Trade 1 (2026.11.10 03:16): XAUUSDm buy 0.01 @ 4035.20 -> 4065.30 = +30.10 => Balance 157.10
+// Trade 2 (2026.11.11 05:31): XAUUSDm buy 0.01 @ 3981.10 -> 3965.20 = -15.90 => Balance 141.20
+// Trade 3 (2026.11.11 07:22): XAUUSDm sell 0.01 @ 3980.40 -> 3935.20 = +45.20 => Balance 186.40
 const INITIAL_ACCOUNTS: Account[] = [
+  {
+    id: 'eslam-1-real',
+    name: 'إسلام 1',
+    broker: 'Exness Technologies Ltd',
+    server: 'Exness-MT5Real35',
+    accountNumber: '256476260',
+    balance: 186.40,
+    currency: 'USD',
+    type: 'real',
+    leverage: '1:2000',
+    logoType: 'exness',
+    lastKnownLabel: 'Standard · Access Point #3, Hedge'
+  },
   {
     id: 'exness-real-33',
     name: 'Standard',
     broker: 'Exness Technologies Ltd',
     server: 'Exness-MT5Real33',
     accountNumber: '252622825',
-    balance: 261.20,
+    balance: 0.00,
     currency: 'USD',
     type: 'real',
     leverage: '1:2000',
     logoType: 'exness',
-    lastKnownLabel: 'Access point'
+    lastKnownLabel: 'Access Point #3, Hedge'
   },
   {
     id: 'exness-trial-16',
@@ -67,25 +85,25 @@ const INITIAL_ACCOUNTS: Account[] = [
     broker: 'Exness Technologies Ltd',
     server: 'Exness-MT5Trial16',
     accountNumber: '472970564',
-    balance: 1029.35,
+    balance: 29.35,
     currency: 'USD',
     type: 'demo',
     leverage: '1:200',
     logoType: 'exness',
-    lastKnownLabel: 'آخر ما عرف · USD'
+    lastKnownLabel: 'آخر ما عرف، USD'
   },
   {
     id: 'metaquotes-demo',
     name: 'Eslam Alqadasi',
     broker: 'MetaQuotes Ltd.',
     server: 'MetaQuotes-Demo',
-    accountNumber: '5057410470',
-    balance: 96818.02,
+    accountNumber: '5058743039',
+    balance: 3360.09,
     currency: 'USD',
     type: 'demo',
     leverage: '1:100',
     logoType: 'metaquotes',
-    lastKnownLabel: 'آخر ما عرف · USD'
+    lastKnownLabel: 'آخر ما عرف، USD'
   }
 ];
 
@@ -110,11 +128,11 @@ const INITIAL_QUOTES: SymbolQuote[] = [
     symbol: 'XAUUSDm',
     name: 'Gold vs US Dollar',
     digits: 3,
-    bid: 3882.823,
-    ask: 3883.063,
+    bid: 3935.200,
+    ask: 3935.440,
     spread: 240,
-    high: 3915.400,
-    low: 3862.100,
+    high: 4065.300,
+    low: 3930.100,
     time: '10:44:07',
     change: 0.57,
     tickDirection: 'up',
@@ -137,6 +155,22 @@ const INITIAL_QUOTES: SymbolQuote[] = [
     category: 'metals',
     contractSize: 5000,
     source: 'COMEX Live'
+  },
+  {
+    symbol: 'USOILm',
+    name: 'WTI Crude Oil vs US Dollar',
+    digits: 3,
+    bid: 84.553,
+    ask: 84.583,
+    spread: 30,
+    high: 85.191,
+    low: 84.005,
+    time: '10:44:05',
+    change: 0.73,
+    tickDirection: 'up',
+    category: 'commodities',
+    contractSize: 1000,
+    source: 'NYMEX Live'
   },
   {
     symbol: 'ETHUSDm',
@@ -260,22 +294,6 @@ const INITIAL_QUOTES: SymbolQuote[] = [
     contractSize: 10
   },
   {
-    symbol: 'USOILm',
-    name: 'WTI Crude Oil vs US Dollar',
-    digits: 2,
-    bid: 86.68,
-    ask: 86.71,
-    spread: 3,
-    high: 87.80,
-    low: 85.90,
-    time: '10:44:05',
-    change: 0.73,
-    tickDirection: 'up',
-    category: 'commodities',
-    contractSize: 1000,
-    source: 'NYMEX Live'
-  },
-  {
     symbol: 'EURUSDm',
     name: 'Euro vs US Dollar',
     digits: 5,
@@ -353,50 +371,6 @@ const INITIAL_POSITIONS: Position[] = [
     profit: 3.71,
     openTime: '2026.11.15 06:15:22',
     accountId: 'exness-real-33'
-  },
-  {
-    id: 'pos-xag-1',
-    ticket: 2520554556,
-    symbol: 'XAGUSDm',
-    type: 'buy',
-    lots: 0.01,
-    openPrice: 53.134,
-    currentPrice: 48.705,
-    sl: 47.200,
-    tp: 55.800,
-    swap: 0.00,
-    commission: 0.00,
-    profit: -221.45,
-    openTime: '2026.10.26 13:57:53',
-    accountId: 'exness-real-33'
-  },
-  {
-    id: 'pos-xau-1',
-    ticket: 2520554890,
-    symbol: 'XAUUSDm',
-    type: 'buy',
-    lots: 0.01,
-    openPrice: 3902.103,
-    currentPrice: 3882.823,
-    swap: 0.00,
-    commission: 0.00,
-    profit: -19.28,
-    openTime: '2026.11.02 09:20:14',
-    accountId: 'exness-real-33'
-  },
-  {
-    id: 'pos-xau-2',
-    ticket: 2520555102,
-    symbol: 'XAUUSDm',
-    type: 'sell',
-    lots: 0.01,
-    openPrice: 4127.120,
-    currentPrice: 3883.063,
-    swap: 0.00,
-    commission: 0.00,
-    profit: 244.06,
-    openTime: '2026.10.28 16:40:05',
-    accountId: 'exness-real-33'
   }
 ];
 
@@ -408,92 +382,12 @@ function formatDateYMD(date: Date): string {
 }
 
 function createInitialHistory(): Deal[] {
-  const now = new Date();
-  const today = formatDateYMD(now);
-  const threeDaysAgo = formatDateYMD(new Date(now.getTime() - 3 * 86400000));
-  const twoWeeksAgo = formatDateYMD(new Date(now.getTime() - 14 * 86400000));
-  const twoMonthsAgo = formatDateYMD(new Date(now.getTime() - 55 * 86400000));
-
   return [
+    // === Account: إسلام 1 (eslam-1-real) ===
+    // Day 1: 2026.11.10 -> Deposit 127.00 + Trade 1 (03:16:00) Buy 4035.20 -> 4065.30 (+30.10)
     {
-      id: 'deal-today-1',
-      ticket: 251904412,
-      orderTicket: 251904410,
-      symbol: 'XAUUSDm',
-      type: 'sell',
-      direction: 'out',
-      lots: 0.01,
-      openPrice: 4120.932,
-      closePrice: 4135.476,
-      swap: 0,
-      commission: 0,
-      profit: -14.55,
-      openTime: `${today} 04:20:34`,
-      closeTime: `${today} 09:42:07`,
-      status: 'FILLED',
-      accountId: 'exness-real-33',
-      comment: 'Market execution'
-    },
-    {
-      id: 'deal-week-1',
-      ticket: 251880210,
-      orderTicket: 251880208,
-      symbol: 'XAUUSDm',
-      type: 'buy',
-      direction: 'in',
-      lots: 0.01,
-      openPrice: 4127.120,
-      closePrice: 4135.476,
-      swap: 0,
-      commission: 0,
-      profit: 8.35,
-      openTime: `${threeDaysAgo} 11:15:20`,
-      closeTime: `${threeDaysAgo} 14:22:18`,
-      status: 'FILLED',
-      accountId: 'exness-real-33',
-      comment: 'Take Profit hit'
-    },
-    {
-      id: 'deal-month-1',
-      ticket: 251750112,
-      orderTicket: 251750109,
-      symbol: 'BTCUSDm',
-      type: 'buy',
-      direction: 'out',
-      lots: 0.01,
-      openPrice: 62140.50,
-      closePrice: 64015.50,
-      swap: 0,
-      commission: 0,
-      profit: 18.75,
-      openTime: `${twoWeeksAgo} 08:10:00`,
-      closeTime: `${twoWeeksAgo} 18:05:44`,
-      status: 'FILLED',
-      accountId: 'exness-real-33',
-      comment: 'Closed manually'
-    },
-    {
-      id: 'deal-3m-1',
-      ticket: 251620001,
-      orderTicket: 251620000,
-      symbol: 'XAGUSDm',
-      type: 'sell',
-      direction: 'out',
-      lots: 0.01,
-      openPrice: 51.792,
-      closePrice: 48.730,
-      swap: 0,
-      commission: 0,
-      profit: 153.10,
-      openTime: `${twoMonthsAgo} 10:00:12`,
-      closeTime: `${twoMonthsAgo} 19:30:11`,
-      status: 'FILLED',
-      accountId: 'exness-real-33',
-      comment: 'Take Profit'
-    },
-    {
-      id: 'deposit-real-33',
-      ticket: 10000001,
+      id: 'eslam1-deposit',
+      ticket: 256476001,
       symbol: 'Balance',
       type: 'deposit',
       lots: 0,
@@ -501,15 +395,76 @@ function createInitialHistory(): Deal[] {
       closePrice: 0,
       swap: 0,
       commission: 0,
-      profit: 261.20,
-      openTime: `${twoMonthsAgo} 08:00:00`,
-      closeTime: `${twoMonthsAgo} 08:00:00`,
+      profit: 127.00,
+      openTime: '2026.11.10 01:00:00',
+      closeTime: '2026.11.10 01:00:00',
       status: 'FILLED',
-      accountId: 'exness-real-33',
-      comment: 'إيداع الحساب'
+      accountId: 'eslam-1-real',
+      comment: 'إيداع رصيد الحساب'
     },
     {
-      id: 'deposit-trial-16',
+      id: 'eslam1-deal-1',
+      ticket: 256476101,
+      orderTicket: 256476100,
+      symbol: 'XAUUSDm',
+      type: 'buy',
+      direction: 'out',
+      lots: 0.01,
+      openPrice: 4035.200,
+      closePrice: 4065.300,
+      swap: 0,
+      commission: 0,
+      profit: 30.10,
+      openTime: '2026.11.10 03:16:00',
+      closeTime: '2026.11.10 03:16:00',
+      status: 'FILLED',
+      accountId: 'eslam-1-real',
+      comment: 'إغلاق بربح'
+    },
+    // Day 2: 2026.11.11 -> Trade 2 (05:31:00) Buy 3981.10 -> 3965.20 (-15.90)
+    {
+      id: 'eslam1-deal-2',
+      ticket: 256476202,
+      orderTicket: 256476201,
+      symbol: 'XAUUSDm',
+      type: 'buy',
+      direction: 'out',
+      lots: 0.01,
+      openPrice: 3981.100,
+      closePrice: 3965.200,
+      swap: 0,
+      commission: 0,
+      profit: -15.90,
+      openTime: '2026.11.11 05:31:00',
+      closeTime: '2026.11.11 05:31:00',
+      status: 'FILLED',
+      accountId: 'eslam-1-real',
+      comment: 'إغلاق بخسارة'
+    },
+    // Day 2: 2026.11.11 -> Trade 3 (07:22:00) Sell 3980.40 -> 3935.20 (+45.20)
+    {
+      id: 'eslam1-deal-3',
+      ticket: 256476303,
+      orderTicket: 256476302,
+      symbol: 'XAUUSDm',
+      type: 'sell',
+      direction: 'out',
+      lots: 0.01,
+      openPrice: 3980.400,
+      closePrice: 3935.200,
+      swap: 0,
+      commission: 0,
+      profit: 45.20,
+      openTime: '2026.11.11 07:22:00',
+      closeTime: '2026.11.11 07:22:00',
+      status: 'FILLED',
+      accountId: 'eslam-1-real',
+      comment: 'إغلاق بربح'
+    },
+
+    // === Account: Standard Trial (exness-trial-16) ===
+    {
+      id: 'trial-deposit-1',
       ticket: 48920100,
       symbol: 'Balance',
       type: 'deposit',
@@ -518,13 +473,51 @@ function createInitialHistory(): Deal[] {
       closePrice: 0,
       swap: 0,
       commission: 0,
-      profit: 1029.35,
-      openTime: `${twoWeeksAgo} 12:45:01`,
-      closeTime: `${twoWeeksAgo} 12:45:01`,
+      profit: 19.51,
+      openTime: '2026.11.10 02:00:00',
+      closeTime: '2026.11.10 02:00:00',
       status: 'FILLED',
       accountId: 'exness-trial-16',
-      comment: 'Demo Balance'
+      comment: 'Deposit'
     },
+    {
+      id: 'trial-deal-1',
+      ticket: 48920101,
+      orderTicket: 48920100,
+      symbol: 'XAUUSDm',
+      type: 'buy',
+      direction: 'out',
+      lots: 0.01,
+      openPrice: 4123.369,
+      closePrice: 4122.625,
+      swap: 0,
+      commission: 0,
+      profit: -0.74,
+      openTime: '2026.11.10 06:42:35',
+      closeTime: '2026.11.10 06:42:35',
+      status: 'FILLED',
+      accountId: 'exness-trial-16'
+    },
+    {
+      id: 'trial-deal-2',
+      ticket: 48920102,
+      orderTicket: 48920101,
+      symbol: 'USOILm',
+      type: 'buy',
+      direction: 'out',
+      lots: 0.01,
+      openPrice: 84.451,
+      closePrice: 84.553,
+      swap: 0,
+      commission: 0,
+      profit: 1.02,
+      openTime: '2026.11.10 07:00:08',
+      closeTime: '2026.11.10 07:00:08',
+      status: 'FILLED',
+      accountId: 'exness-trial-16'
+    },
+
+    // === Account: MetaQuotes Demo ===
     {
       id: 'deposit-demo-1',
       ticket: 50574100,
@@ -535,9 +528,9 @@ function createInitialHistory(): Deal[] {
       closePrice: 0,
       swap: 0,
       commission: 0,
-      profit: 100000.00,
-      openTime: `${twoWeeksAgo} 08:30:00`,
-      closeTime: `${twoWeeksAgo} 08:30:00`,
+      profit: 3360.09,
+      openTime: '2026.11.08 08:30:00',
+      closeTime: '2026.11.08 08:30:00',
       status: 'FILLED',
       accountId: 'metaquotes-demo',
       comment: 'رصيد الحساب'
@@ -548,57 +541,66 @@ function createInitialHistory(): Deal[] {
 const INITIAL_MESSAGES: MessageItem[] = [
   {
     id: 'msg-1',
-    title: 'إشعار أمان Exness: تسجيل دخول ناجح',
-    content: 'تم تسجيل الدخول بنجاح إلى حساب MT5 الخاص بك على الخادم Exness-MT5Real33 من جهاز موثوق.',
-    sender: 'Exness Security',
-    time: 'منذ 12 دقيقة',
+    title: 'تم فتح حساب إسلام 1 الحقيقي بنجاح',
+    content: 'تم تفعيل حسابك الحقيقي "إسلام 1" (Standard) على خادم Exness-MT5Real35 وإيداع مبلغ 127.00 USD وتحديث الرصيد إلى 186.40 USD.',
+    sender: 'Exness Accounts',
+    time: 'منذ 10 دقائق',
     read: false,
     type: 'security'
   },
   {
     id: 'msg-2',
-    title: 'تحليل حركة BTCUSDm و XAUUSDm اليوم',
-    content: 'تداول البيتكوين BTCUSDm قرب مستويات 63,950$ مع تقلبات متوسطة على فريم M15، ومستويات مقاومة عند 65,400$ ودعم عند 62,140$.',
-    sender: 'MQL5 Market Pulse',
+    title: 'تأكيد إغلاق صفقة XAUUSDm بيع',
+    content: 'تم إغلاق صفقة XAUUSDm sell 0.01 عند السعر 3935.20 بربح +45.20 USD بتاريخ 2026.11.11 07:22.',
+    sender: 'MetaTrader 5 Server',
     time: 'منذ ساعة',
     read: false,
-    type: 'news'
+    type: 'system'
   },
   {
     id: 'msg-3',
-    title: 'تأكيد تنفيذ أمر #2773274125',
-    content: 'تم تنفيذ أمر شراء 0.01 لوت BTCUSDm بسعر 63580.00 وتعيين مستويات SL/TP بنجاح.',
+    title: 'تأكيد إغلاق صفقة XAUUSDm شراء',
+    content: 'تم إغلاق صفقة XAUUSDm buy 0.01 عند السعر 4065.30 بربح +30.10 USD بتاريخ 2026.11.10 03:16.',
     sender: 'MetaTrader 5 Server',
-    time: 'منذ 3 ساعات',
+    time: 'أمس',
     read: false,
     type: 'system'
   },
   {
     id: 'msg-4',
-    title: 'تحديث أسعار الفائدة الليلية (Swap-Free)',
-    content: 'حسابك مفعّل على الوضع الإسلامي الخالي من فوائد التبييت (Swap-Free) لجميع أزواج العملات والذهب والعملات الرقمية.',
+    title: 'الحساب الإسلامي الخالي من الفوائد (Swap-Free)',
+    content: 'حسابك مفعّل على الوضع الإسلامي الخالي من فوائد التبييت لجميع المعادن والعملات.',
     sender: 'Exness Support',
-    time: 'أمس 21:15',
+    time: 'أمس',
     read: false,
     type: 'system'
   },
   {
     id: 'msg-5',
-    title: 'تنبيه هام حول أوقات افتتاح الأسواق',
-    content: 'تبدأ السيولة المرتفعة للذهب والعملات الرئيسية مع افتتاح الجلسة الأوروبية والأمريكية بتوقيت السيرفر.',
-    sender: 'MetaQuotes News',
-    time: 'أمس 16:40',
+    title: 'تحليل حركة BTCUSDm و XAUUSDm',
+    content: 'تداول الذهب XAUUSDm حول مستويات 3935$ وسط ترقب للجلسة الأمريكية.',
+    sender: 'MQL5 Market Pulse',
+    time: 'قبل يومين',
     read: false,
     type: 'news'
   },
   {
     id: 'msg-6',
-    title: 'تفعيل المصادقة الثنائية OTP',
-    content: 'يمكنك توليد رمز أمان مؤقت من قائمة مولد OTP في الشريط الجانبي لتأمين اتصالك.',
+    title: 'تنبيه أمان تسجيل الدخول',
+    content: 'تم تسجيل الدخول بنجاح من تطبيق MetaTrader 5 لنظام أندرويد.',
     sender: 'MetaQuotes Security',
     time: 'قبل يومين',
     read: false,
     type: 'security'
+  },
+  {
+    id: 'msg-7',
+    title: 'تحديث منصة MetaTrader 5',
+    content: 'تحسينات في سرعة تنفيذ الأوامر وعرض السجل التاريخي بدقة اليوم.',
+    sender: 'MetaQuotes Support',
+    time: 'قبل 3 أيام',
+    read: false,
+    type: 'news'
   }
 ];
 
@@ -617,7 +619,6 @@ function getTfSeconds(tf: Timeframe): number {
   return map[tf] || 900;
 }
 
-// Deterministic seeded pseudo-random generator so each symbol + timeframe produces consistent authentic candle structure
 function generateCandlesForSymbol(symbol: string, timeframe: Timeframe, targetBid: number): Candle[] {
   const count = 240;
   const tfSec = getTfSeconds(timeframe);
@@ -634,17 +635,14 @@ function generateCandlesForSymbol(symbol: string, timeframe: Timeframe, targetBi
     return (seed - 1) / 2147483646;
   };
 
-  // Scale volatility based on timeframe & symbol
   const tfFactor = Math.sqrt(tfSec / 900);
   const baseVol = targetBid * 0.0042 * Math.min(Math.max(tfFactor, 0.35), 4.5);
 
-  // Build backwards from targetBid so the latest candle closes cleanly at targetBid
   const raw: Candle[] = new Array(count);
   let cursorClose = targetBid;
 
   for (let i = count - 1; i >= 0; i--) {
     const time = (currentBucket - (count - 1 - i) * tfSec) * 1000;
-    // Create realistic wave structure (impulses + pullbacks) like real market chart
     const wave = Math.sin(i * 0.14) * 0.28 + Math.cos(i * 0.055) * 0.22;
     const delta = (nextRand() - 0.495 + wave * 0.35) * baseVol;
     const close = cursorClose;
@@ -667,7 +665,7 @@ const TradingContext = createContext<TradingContextType | undefined>(undefined);
 export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [accounts, setAccounts] = useState<Account[]>(() => {
     try {
-      const saved = localStorage.getItem('mt5_v2_accounts');
+      const saved = localStorage.getItem('mt5_v3_accounts');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -678,8 +676,8 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const [activeAccount, setActiveAccountState] = useState<Account>(() => {
     try {
-      const savedId = localStorage.getItem('mt5_v2_active_account_id');
-      const savedAccs = localStorage.getItem('mt5_v2_accounts');
+      const savedId = localStorage.getItem('mt5_v3_active_account_id');
+      const savedAccs = localStorage.getItem('mt5_v3_accounts');
       if (savedId && savedAccs) {
         const parsed: Account[] = JSON.parse(savedAccs);
         const found = parsed.find((a) => a.id === savedId);
@@ -697,7 +695,7 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const [positions, setPositions] = useState<Position[]>(() => {
     try {
-      const saved = localStorage.getItem('mt5_v2_positions');
+      const saved = localStorage.getItem('mt5_v3_positions');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -708,7 +706,7 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const [historyDeals, setHistoryDeals] = useState<Deal[]>(() => {
     try {
-      const saved = localStorage.getItem('mt5_v2_history_deals');
+      const saved = localStorage.getItem('mt5_v3_history_deals');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -726,7 +724,6 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [otpModalOpen, setOtpModalOpen] = useState<boolean>(false);
   const [addAccountModalOpen, setAddAccountModalOpen] = useState<boolean>(false);
 
-  // Candle state synced per symbol/timeframe
   const [candles, setCandles] = useState<Candle[]>(() => {
     const q = INITIAL_QUOTES.find((item) => item.symbol === 'BTCUSDm') || INITIAL_QUOTES[0];
     return generateCandlesForSymbol(q.symbol, 'M15', q.bid);
@@ -738,17 +735,15 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSymbol, timeframe]);
 
-  // Persist locally
   useEffect(() => {
     try {
-      localStorage.setItem('mt5_v2_accounts', JSON.stringify(accounts));
-      localStorage.setItem('mt5_v2_active_account_id', activeAccount.id);
-      localStorage.setItem('mt5_v2_positions', JSON.stringify(positions));
-      localStorage.setItem('mt5_v2_history_deals', JSON.stringify(historyDeals));
+      localStorage.setItem('mt5_v3_accounts', JSON.stringify(accounts));
+      localStorage.setItem('mt5_v3_active_account_id', activeAccount.id);
+      localStorage.setItem('mt5_v3_positions', JSON.stringify(positions));
+      localStorage.setItem('mt5_v3_history_deals', JSON.stringify(historyDeals));
     } catch {}
   }, [accounts, activeAccount.id, positions, historyDeals]);
 
-  // Live commodities poll from backend proxy
   useEffect(() => {
     let active = true;
     const fetchCommodities = async () => {
@@ -774,9 +769,7 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
           );
           setIsLiveConnected(true);
         }
-      } catch {
-        // Silent fallback to simulated ticks
-      }
+      } catch {}
     };
     fetchCommodities();
     const interval = setInterval(fetchCommodities, 20000);
@@ -786,7 +779,6 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
     };
   }, []);
 
-  // Live realistic tick engine (1.1s interval) + updates active candle & position floating P/L
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -828,7 +820,6 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
     return () => clearInterval(timer);
   }, []);
 
-  // Update active candle and live position profits whenever quotes tick
   useEffect(() => {
     const activeQ = quotes.find((q) => q.symbol === selectedSymbol);
     if (activeQ) {
@@ -849,19 +840,18 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
         if (!q) return pos;
         const closeRefPrice = pos.type === 'buy' ? q.bid : q.ask;
         const diff = pos.type === 'buy' ? closeRefPrice - pos.openPrice : pos.openPrice - closeRefPrice;
-        // Calculate realistic profit based on contract size
         const profitMultiplier =
           pos.symbol.startsWith('XAU')
             ? 100
             : pos.symbol.startsWith('XAG')
-            ? 50
+            ? 5000
             : pos.symbol.startsWith('BTC') || pos.symbol.startsWith('ETH')
             ? 1
             : pos.symbol.startsWith('USDJPY')
             ? 650
             : pos.symbol.startsWith('USOIL')
-            ? 100
-            : 1000;
+            ? 1000
+            : 100000;
         const profit = parseFloat((diff * pos.lots * profitMultiplier).toFixed(2));
         return {
           ...pos,
@@ -872,7 +862,6 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
     );
   }, [quotes, selectedSymbol]);
 
-  // Financial metrics for active account
   const activePositions = positions.filter((p) => p.accountId === activeAccount.id);
   const totalProfit = parseFloat(activePositions.reduce((s, p) => s + p.profit, 0).toFixed(2));
   const equity = parseFloat((activeAccount.balance + totalProfit).toFixed(2));
@@ -1057,7 +1046,7 @@ export const TradingProvider: React.FC<{ children: ReactNode }> = ({ children })
       type: acc.type || 'demo',
       leverage: acc.leverage || '1:2000',
       logoType: isExness ? 'exness' : 'metaquotes',
-      lastKnownLabel: `آخر ما عرف · ${acc.currency || 'USD'}`
+      lastKnownLabel: `آخر ما عرف، ${acc.currency || 'USD'}`
     };
 
     const depositDeal: Deal = {
